@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using MaxMind.GeoIP2;
+using MaxMind.GeoIP2.Exceptions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +26,7 @@ namespace auth_tickets
       this.cache = cache;
       _httpContextAccessor = httpContextAccessor;
       _parser = Parser.GetDefault();
+      _ipClient = maxMindClient;
     }
 
     public async Task<string> StoreAsync(AuthenticationTicket ticket)
@@ -96,6 +99,21 @@ namespace auth_tickets
 
       if (_httpContextAccessor.HttpContext.Request.Headers.TryGetValue("user-agent", out var ua))
       {
+        var state = "unknown";
+        var city = "unknown";
+
+        try
+        {
+          var response = _ipClient.City(_httpContextAccessor.HttpContext.Connection.RemoteIpAddress);
+
+          state = response.MostSpecificSubdivision.Name;    // 'Minnesota'
+          city = response.City.Name;
+        } catch (AddressNotFoundException ex) {
+          if (ex.Message.Contains("reserved IP address")) {
+            city = "developing";
+            state = "localhost";
+          }
+        }
 
         var client = _parser.Parse(ua);
         var session = new Session(client, state, city, authKey);
