@@ -70,6 +70,7 @@ namespace auth_tickets
           options.Authority = authority;
           options.GetClaimsFromUserInfoEndpoint = true;
           options.RequireHttpsMetadata = true;
+
           if (environment == Environments.Development)
           {
             IConfigurationSection oidc = Configuration.GetSection("Authentication:UtahId");
