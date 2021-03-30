@@ -1,4 +1,5 @@
 using System;
+using MaxMind.GeoIP2;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
@@ -29,6 +30,10 @@ namespace auth_tickets
     {
       services.AddHttpContextAccessor();
       services.AddSingleton<ITicketStore, RedisTicketStore>();
+
+      services.Configure<WebServiceClientOptions>(Configuration.GetSection("MaxMind"));
+      services.AddHttpClient<WebServiceClient>();
+
       services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
         .Configure<ITicketStore>((options, store) =>
         {
@@ -51,6 +56,7 @@ namespace auth_tickets
 
       var redis = ConnectionMultiplexer.Connect(redisConfig);
 
+      services.AddSingleton<IConnectionMultiplexer>(redis);
       services.AddDataProtection().PersistKeysToStackExchangeRedis(redis, "data-protection-keys");
 
       services.AddStackExchangeRedisCache(options => options.Configuration = redisConfig);
@@ -86,8 +92,15 @@ namespace auth_tickets
         });
 
       services.AddAuthorization(options =>
+      {
         options.AddPolicy(CookieAuthenticationDefaults.AuthenticationScheme,
-          policy => policy.RequireAuthenticatedUser()));
+          policy => policy.RequireAuthenticatedUser());
+
+        options.AddPolicy("administrator", policy => {
+          policy.RequireAuthenticatedUser();
+          policy.RequireClaim("agrcPLSS:UserRole", "administrator");
+        });
+      });
 
       services.AddControllers();
       services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "auth_tickets", Version = "v1" }));
