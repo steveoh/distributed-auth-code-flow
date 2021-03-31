@@ -150,7 +150,7 @@ For docker to work with this flow the dotnet developer certificate needs to be a
 - Using the scripts
 
    ```sh
-   ./scripts/build.sh`
+   ./scripts/build.sh
    ```
 
 - Using docker compose
@@ -177,7 +177,7 @@ The publish script pushes the docker image to GCR
 - Using the scripts
 
    ```sh
-   ./scripts/publish.sh`
+   ./scripts/publish.sh
    ```
 
 ## Cloud Run
