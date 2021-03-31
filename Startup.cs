@@ -25,7 +25,6 @@ namespace auth_tickets
 
     public IConfiguration Configuration { get; }
 
-    // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
       services.AddHttpContextAccessor();
@@ -47,12 +46,8 @@ namespace auth_tickets
           options.LogoutPath = "/";
         });
 
-      var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-      var redisConfig = Environment.GetEnvironmentVariable("REDIS_IP") ?? "localhost:6379";
-
-      if (environment == "docker") {
-        redisConfig = "redis";
-      }
+      var redisSection = Configuration.GetSection("Redis");
+      var redisConfig = redisSection["Configuration"];
 
       var redis = ConnectionMultiplexer.Connect(redisConfig);
 
@@ -69,20 +64,14 @@ namespace auth_tickets
         .AddCookie()
         .AddOpenIdConnect(options =>
         {
-          var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-          options.ClientId = Environment.GetEnvironmentVariable("PLSS_CLIENT_ID_STAGING");
-          options.ClientSecret = Environment.GetEnvironmentVariable("PLSS_CLIENT_SECRET_STAGING");
-
           options.Authority = authority;
           options.GetClaimsFromUserInfoEndpoint = true;
           options.RequireHttpsMetadata = true;
 
-          if (environment == Environments.Development)
-          {
-            IConfigurationSection oidc = Configuration.GetSection("Authentication:UtahId");
-            options.ClientId = oidc["ClientId"];
-            options.ClientSecret = oidc["ClientSecret"];
-          }
+          var oidc = Configuration.GetSection("Authentication:UtahId").Get<OidcOptions>();
+
+          options.ClientId = oidc.ClientId;
+          options.ClientSecret = oidc.ClientSecret;
 
           options.ResponseType = "code";
           options.UsePkce = true;
@@ -113,7 +102,6 @@ namespace auth_tickets
       });
     }
 
-    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
       if (env.IsDevelopment())
