@@ -180,6 +180,21 @@ The publish script pushes the docker image to GCR
    ./scripts/publish.sh
    ```
 
+## Infrastructure
+
+1. Initialize terraform
+
+   ```sh
+   cd _infrastructure
+   terraform init
+   ```
+
+1. Stand up infrastructure
+
+   ```sh
+   terraform apply
+   ```
+
 ## Cloud Run
 
 1. Choose the image from GCR
